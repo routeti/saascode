@@ -17,28 +17,32 @@ interface Request {
 
 const publicFolder = path.resolve(__dirname, "..", "..", "..", "public");
 
-const processAudio = async (audio: string): Promise<string> => {
+const processAudio = async (audio: string, deleteFile: Boolean = true): Promise<string> => {
   const outputAudio = `${publicFolder}/${new Date().getTime()}.mp3`;
   return new Promise((resolve, reject) => {
     exec(
-      `${ffmpegPath.path} -i ${audio} -vn -ab 128k -ar 44100 -f ipod ${outputAudio} -y`,
+      `\"${ffmpegPath.path}\" -i \"${audio}\" -vn -ab 128k -ar 44100 -f ipod \"${outputAudio}\" -y`,
       (error, _stdout, _stderr) => {
         if (error) reject(error);
-        fs.unlinkSync(audio);
+        if (deleteFile) {
+          fs.unlinkSync(audio);
+        }
         resolve(outputAudio);
       }
     );
   });
 };
 
-const processAudioFile = async (audio: string): Promise<string> => {
+export const processAudioFile = async (audio: string, deleteFile: Boolean = true): Promise<string> => {
   const outputAudio = `${publicFolder}/${new Date().getTime()}.mp3`;
   return new Promise((resolve, reject) => {
     exec(
-      `${ffmpegPath.path} -i ${audio} -vn -ar 44100 -ac 2 -b:a 192k ${outputAudio}`,
+      `\"${ffmpegPath.path}\" -i \"${audio}\" -vn -ar 44100 -ac 2 -b:a 192k \"${outputAudio}\"`,
       (error, _stdout, _stderr) => {
         if (error) reject(error);
-        fs.unlinkSync(audio);
+        if (deleteFile) {
+          fs.unlinkSync(audio);
+        }
         resolve(outputAudio);
       }
     );
@@ -47,11 +51,11 @@ const processAudioFile = async (audio: string): Promise<string> => {
 
 export const getMessageOptions = async (
   fileName: string,
-  pathMedia: string
+  pathMedia: string,
+  compressAudio: Boolean = true
 ): Promise<any> => {
   const mimeType = mime.lookup(pathMedia);
   const typeMessage = mimeType.split("/")[0];
-
   try {
     if (!mimeType) {
       throw new Error("Invalid mimetype");
@@ -66,20 +70,18 @@ export const getMessageOptions = async (
         // gifPlayback: true
       };
     } else if (typeMessage === "audio") {
+      let audioFilePath;
       const typeAudio = fileName.includes("audio-record-site");
-      const convert = await processAudio(pathMedia);
-      if (typeAudio) {
-        options = {
-          audio: fs.readFileSync(convert),
-          mimetype: typeAudio ? "audio/mp4" : mimeType,
-          ptt: true
-        };
+      // Audio anexado ao chatbot e fila são comprimidos na entrada
+      if (compressAudio) {
+        audioFilePath = typeAudio ? await processAudio(pathMedia, false) : await processAudioFile(pathMedia, false); 
       } else {
-        options = {
-          audio: fs.readFileSync(convert),
-          mimetype: typeAudio ? "audio/mp4" : mimeType,
-          ptt: true
-        };
+        audioFilePath = pathMedia
+      }
+      options = {
+        audio: fs.readFileSync(audioFilePath),
+        mimetype: typeAudio ? "audio/mp4" : mimeType,
+        ptt: true
       }
     } else if (typeMessage === "document") {
       options = {

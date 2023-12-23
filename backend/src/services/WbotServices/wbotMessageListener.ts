@@ -761,7 +761,7 @@ const verifyQueue = async (
       const filePath = path.resolve("public", firstQueue.mediaPath);
 
 
-      const optionsMsg = await getMessageOptions(firstQueue.mediaName, filePath);
+      const optionsMsg = await getMessageOptions(firstQueue.mediaName, filePath, false);
 
       let sentMessage = await wbot.sendMessage(`${ticket.contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`, { ...optionsMsg });
 
@@ -925,7 +925,7 @@ const verifyQueue = async (
       if (choosenQueue.mediaPath !== null && choosenQueue.mediaPath !== "") {
         const filePath = path.resolve("public", choosenQueue.mediaPath);
   
-        const optionsMsg = await getMessageOptions(choosenQueue.mediaName, filePath);
+        const optionsMsg = await getMessageOptions(choosenQueue.mediaName, filePath, false);
   
         let sentMessage = await wbot.sendMessage(`${ticket.contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`, { ...optionsMsg });
   
