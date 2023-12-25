@@ -2,6 +2,7 @@ import { Op } from "sequelize";
 import * as Yup from "yup";
 import AppError from "../../errors/AppError";
 import Queue from "../../models/Queue";
+import { TypebotService } from "../TypebotService/apiTypebotService";
 import ShowQueueService from "./ShowQueueService";
 
 interface QueueData {
@@ -10,6 +11,11 @@ interface QueueData {
   greetingMessage?: string;
   outOfHoursMessage?: string;
   schedules?: any[];
+  workspaceTypebot?: string; 
+  typeChatbot?: string; 
+  typebotId?: string; 
+  publicId?: string;
+  resetChatbotMsg?: Boolean;
 }
 
 const UpdateQueueService = async (
@@ -70,6 +76,14 @@ const UpdateQueueService = async (
 
   if (queue.companyId !== companyId) {
     throw new AppError("Não é permitido alterar registros de outra empresa");
+  }
+  console.log(queueData.typebotId)
+  if (queueData.typebotId) {
+    const { typebot } = await TypebotService.getTypebot(companyId, queueData.typebotId)
+    queueData = {
+      ...queueData,
+      publicId: typebot?.publicId
+    }
   }
 
   await queue.update(queueData);

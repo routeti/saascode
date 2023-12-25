@@ -107,6 +107,9 @@ export default function Options(props) {
   const [asaasType, setAsaasType] = useState("");
   const [loadingAsaasType, setLoadingAsaasType] = useState(false);
 
+  const [tokenTypebot, setTokenTypebot] = useState("");
+  const [loadingtokenTypebot, setLoadingTokenTypebot] = useState(false);
+
   const { update } = useSettings();
 
   useEffect(() => {
@@ -160,6 +163,11 @@ export default function Options(props) {
       const asaasType = settings.find((s) => s.key === "asaas");
       if (asaasType) {
         setAsaasType(asaasType.value);
+      }
+
+      const tokenTypebot = settings.find((s) => s.key === "tokenTypebot");
+      if (tokenTypebot) {
+        setTokenTypebot(tokenTypebot.value);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -299,6 +307,17 @@ export default function Options(props) {
     });
     toast.success("Operação atualizada com sucesso.");
     setLoadingAsaasType(false);
+  }
+
+  async function handleChangeTokenTypebot(value) {
+    setTokenTypebot(value);
+    setLoadingTokenTypebot(true);
+    await update({
+      key: "tokenTypebot",
+      value,
+    });
+    toast.success("Operação atualizada com sucesso.");
+    setLoadingTokenTypebot(false);
   }
   return (
     <>
@@ -578,6 +597,39 @@ export default function Options(props) {
             </TextField>
             <FormHelperText>
               {loadingAsaasType && "Atualizando..."}
+            </FormHelperText>
+          </FormControl>
+        </Grid>
+      </Grid>
+      {/*-----------------Token Typebot-----------------*/}
+      <Grid spacing={3} container
+        style={{ marginBottom: 10 }}>
+        <Tabs
+          indicatorColor="primary"
+          textColor="primary"
+          scrollButtons="on"
+          variant="scrollable"
+          className={classes.tab}
+        >
+          <Tab label="TYPEBOT" />
+
+        </Tabs>
+        <Grid xs={12} sm={12} md={12} item>
+          <FormControl className={classes.selectContainer}>
+            <TextField
+              id="tokentypebot"
+              name="tokentypebot"
+              margin="dense"
+              label="Token Typebot"
+              variant="outlined"
+              value={tokenTypebot}
+              onChange={async (e) => {
+                handleChangeTokenTypebot(e.target.value);
+              }}
+            >
+            </TextField>
+            <FormHelperText>
+              {loadingtokenTypebot && "Atualizando..."}
             </FormHelperText>
           </FormControl>
         </Grid>
