@@ -139,7 +139,9 @@ const QueueModal = ({ open, onClose, queueId }) => {
       try {
         const { data } = await api.get(`/typebot/listworkspaces`);
         // console.log(data)
-        setWorkspaceTypebots(data.workspaces);
+        if (data.workspaces && data.workspaces?.length > 0 ) {
+          setWorkspaceTypebots(data.workspaces);
+        }
       } catch (err) {
         toastError(err);
       }
@@ -156,7 +158,9 @@ const QueueModal = ({ open, onClose, queueId }) => {
             }
           });
           // console.log("list ",data)
-          setTypebots(data?.typebots);
+          if (data?.typebots && data?.typebots.length > 0) {
+            setTypebots(data?.typebots);
+           }
         } catch (err) {
           toastError(err);
         }
@@ -204,19 +208,26 @@ const QueueModal = ({ open, onClose, queueId }) => {
   };
 
   const handleChangeWorkspace = async (workspace) => {
-    // console.log("work ", workspace)
+    console.log("work ", workspace)
     if(!workspace) {
-      setTypebots({})
+      setTypebots([])
       return;
     }
-    const { data } = await api.get(`/typebot/listtypebots`, {
-      params: {
-        workspaceId: workspace
+    try {
+      const { data } = await api.get(`/typebot/listtypebots`, {
+        params: {
+          workspaceId: workspace
+        }
+      });
+      // console.log(data)
+      if (data.typebots && data.typebots.length > 0 ) {
+        setTypebots(data.typebots);
+      } else {
+        setTypebots([])
       }
-    });
-    // console.log(data)
-    setTypebots(data.typebots);
-
+    } catch (err) {
+      toastError(err);
+    }
   }
 
   const deleteMedia = async () => {
@@ -453,8 +464,8 @@ const QueueModal = ({ open, onClose, queueId }) => {
                                   labelId="workspaceTypebot-selection-label"
                                   name="workspaceTypebot"
                                   onChange={e => { 
-                                    setFieldValue('workspaceTypebot', e.target.value)
-                                    handleChangeWorkspace(e.target.value)
+                                    setFieldValue('workspaceTypebot', e.target?.value)
+                                    handleChangeWorkspace(e.target?.value)
                                   }}
                                   margin="dense"
                                   className={classes.textField}
