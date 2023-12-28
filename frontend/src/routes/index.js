@@ -111,8 +111,8 @@ const Routes = () => {
                   component={Financeiro}
                   isPrivate
                 />
-                <Route exact path="/queues" component={Queues} isPrivate />
                 <Route exact path="/typebot" component={Typebot} isPrivate />
+                <Route exact path="/queues" component={Queues} isPrivate />
 
                 <Route
                   exact
