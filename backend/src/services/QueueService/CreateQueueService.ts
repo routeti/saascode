@@ -3,6 +3,7 @@ import AppError from "../../errors/AppError";
 import Queue from "../../models/Queue";
 import Company from "../../models/Company";
 import Plan from "../../models/Plan";
+import { TypebotService } from "../TypebotService/apiTypebotService";
 
 interface QueueData {
   name: string;
@@ -11,6 +12,11 @@ interface QueueData {
   greetingMessage?: string;
   outOfHoursMessage?: string;
   schedules?: any[];
+  workspaceTypebot?: string; 
+  typeChatbot?: string; 
+  typebotId?: string; 
+  publicId?: string;
+  resetChatbotMsg?: Boolean;
 }
 
 const CreateQueueService = async (queueData: QueueData): Promise<Queue> => {
@@ -81,6 +87,14 @@ const CreateQueueService = async (queueData: QueueData): Promise<Queue> => {
     await queueSchema.validate({ color, name });
   } catch (err: any) {
     throw new AppError(err.message);
+  }
+
+  if (queueData.typebotId) {
+    const { typebot } = await TypebotService.getTypebot(companyId, queueData.typebotId)
+    queueData = {
+      ...queueData,
+      publicId: typebot?.publicId
+    }
   }
 
   const queue = await Queue.create(queueData);

@@ -84,6 +84,23 @@ class Queue extends Model<Queue> {
 
   @Column
   mediaName: string;
+
+  @Default("option")
+  @Column
+  typeChatbot: string;
+  
+  @Column
+  workspaceTypebot: string;
+  
+  @Column
+  typebotId: string;
+  
+  @Column
+  publicId: string;
+
+  @Default(true)
+  @Column
+  resetChatbotMsg: boolean;
 }
 
 export default Queue;

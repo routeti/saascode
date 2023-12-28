@@ -35,6 +35,8 @@ import Subscription from "../pages/Subscription/";
 
 import Kanban from "../pages/Kanban";
 import TagsKanban from "../pages/TagsKanban";
+import Typebot from "../pages/Typebot";
+
 
 const Routes = () => {
   const [showCampaigns, setShowCampaigns] = useState(false);
@@ -109,7 +111,9 @@ const Routes = () => {
                   component={Financeiro}
                   isPrivate
                 />
+                <Route exact path="/typebot" component={Typebot} isPrivate />
                 <Route exact path="/queues" component={Queues} isPrivate />
+
                 <Route
                   exact
                   path="/announcements"

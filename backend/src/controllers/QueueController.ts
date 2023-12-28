@@ -11,6 +11,7 @@ import { head } from "lodash";
 import fs from "fs";
 import path from "path";
 import AppError from "../errors/AppError";
+import { processAudioFile } from "../services/WbotServices/SendWhatsAppMedia";
 
 type QueueFilter = {
   companyId: number;
@@ -31,7 +32,7 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
 };
 
 export const store = async (req: Request, res: Response): Promise<Response> => {
-  const { name, color, greetingMessage, outOfHoursMessage, schedules } =
+  const { name, color, greetingMessage, outOfHoursMessage, schedules, typeChatbot, typebotId, publicId, resetChatbotMsg } =
     req.body;
   const { companyId } = req.user;
 
@@ -41,7 +42,11 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
     greetingMessage,
     companyId,
     outOfHoursMessage,
-    schedules
+    schedules,
+    typeChatbot, 
+    typebotId,
+    publicId,
+    resetChatbotMsg
   });
 
   const io = getIO();
@@ -108,9 +113,16 @@ export const mediaUpload = async (
 
   try {
     const queue = await Queue.findByPk(queueId);
-   
+    let fileName;
+    fileName = file.filename
+    //if file.mimetype
+    if (file?.mimetype.split("/")[0] === "audio") {
+      const fileCompress = await processAudioFile(file.path, true)
+      const partes = fileCompress.split("/")
+      fileName = partes[partes.length - 1];
+    }
     queue.update({
-      mediaPath: file.filename,
+      mediaPath: fileName,
       mediaName: file.originalname
     });
    

@@ -183,6 +183,7 @@ const messages = {
           ratingMessage: "Mensagem de avaliação",
           transferMessage: "Mensagem de Transferência",
           token: "Token",
+          resetChatbot: "Mensagem retorno Menu Inicial"
         },
         buttons: {
           okAdd: "Adicionar",

@@ -21,12 +21,18 @@ import api from "../../services/api";
 import toastError from "../../errors/toastError";
 import ColorPicker from "../ColorPicker";
 import {
+  FormControl,
+  FormControlLabel,
   Grid,
   IconButton,
   InputAdornment,
+  InputLabel,
+  MenuItem,
   Paper,
+  Select,
   Tab,
   Tabs,
+  Switch
 } from "@material-ui/core";
 import { AttachFile, Colorize, DeleteOutline } from "@material-ui/icons";
 import { QueueOptions } from "../QueueOptions";
@@ -42,10 +48,15 @@ const useStyles = makeStyles((theme) => ({
     marginRight: theme.spacing(1),
     flex: 1,
   },
-
+  selectField: {
+    marginRight: theme.spacing(1),
+    flex: 1,
+    minWidth: "300px"
+  },
   btnWrapper: {
     position: "relative",
   },
+
 
   buttonProgress: {
     color: green[500],
@@ -82,7 +93,10 @@ const QueueModal = ({ open, onClose, queueId }) => {
     color: "",
     greetingMessage: "",
     outOfHoursMessage: "",
-
+    typeChatbot: "option",
+    workspaceTypebot: "",
+    typebotId: "",
+    resetChatbotMsg: true
   };
 
   const [colorPickerModalOpen, setColorPickerModalOpen] = useState(false);
@@ -94,6 +108,10 @@ const QueueModal = ({ open, onClose, queueId }) => {
   const attachmentFile = useRef(null);
   const [queueEditable, setQueueEditable] = useState(true);
   const [confirmationOpen, setConfirmationOpen] = useState(false);
+  const [workspaceTypebots, setWorkspaceTypebots] = useState([]);
+  const [typeBots, setTypebots] = useState([]);
+  
+  
 
   const [schedules, setSchedules] = useState([
     { weekday: "Segunda-feira",weekdayEn: "monday",startTime: "08:00",endTime: "18:00",},
@@ -118,6 +136,40 @@ const QueueModal = ({ open, onClose, queueId }) => {
 
   useEffect(() => {
     (async () => {
+      try {
+        const { data } = await api.get(`/typebot/listworkspaces`);
+        // console.log(data)
+        if (data.workspaces && data.workspaces?.length > 0 ) {
+          setWorkspaceTypebots(data.workspaces);
+        }
+      } catch (err) {
+        toastError(err);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (queueId && queue?.workspaceTypebot) {
+      (async () => {
+        try {
+          const { data } = await api.get(`/typebot/listtypebots`, {
+            params: {
+              workspaceId: queue.workspaceTypebot
+            }
+          });
+          // console.log("list ",data)
+          if (data?.typebots && data?.typebots.length > 0) {
+            setTypebots(data?.typebots);
+           }
+        } catch (err) {
+          toastError(err);
+        }
+      })();
+    }
+  }, [queueId, queue]);
+
+  useEffect(() => {
+    (async () => {
       if (!queueId) return;
       try {
         const { data } = await api.get(`/queue/${queueId}`);
@@ -135,6 +187,10 @@ const QueueModal = ({ open, onClose, queueId }) => {
         name: "",
         color: "",
         greetingMessage: "",
+        typeChatbot: "option",
+        workspaceTypebot: "",
+        typebotId: "",
+        resetChatbotMsg: true
       });
     };
   }, [queueId, open]);
@@ -150,6 +206,29 @@ const QueueModal = ({ open, onClose, queueId }) => {
       setAttachment(file);
     }
   };
+
+  const handleChangeWorkspace = async (workspace) => {
+    console.log("work ", workspace)
+    if(!workspace) {
+      setTypebots([])
+      return;
+    }
+    try {
+      const { data } = await api.get(`/typebot/listtypebots`, {
+        params: {
+          workspaceId: workspace
+        }
+      });
+      // console.log(data)
+      if (data.typebots && data.typebots.length > 0 ) {
+        setTypebots(data.typebots);
+      } else {
+        setTypebots([])
+      }
+    } catch (err) {
+      toastError(err);
+    }
+  }
 
   const deleteMedia = async () => {
     if (attachment) {
@@ -246,7 +325,7 @@ const QueueModal = ({ open, onClose, queueId }) => {
                 }, 400);
               }}
             >
-              {({ touched, errors, isSubmitting, values }) => (
+              {({ touched, errors, isSubmitting, values, setFieldValue }) => (
                 <Form>
                   <DialogContent dividers>
                     <Field
@@ -345,7 +424,79 @@ const QueueModal = ({ open, onClose, queueId }) => {
                             />
                         )}
                     </div>
-                    <QueueOptions queueId={queueId} />
+                    <FormControl  className={classes.selectField} margin="dense" variant="outlined" >
+                      <InputLabel htmlFor="typeChatbot-selection">Tipo Chatbot</InputLabel>
+                      <Field
+                          as={Select}
+                          id="typeChatbot-selection"
+                          label="Tipo Chatbot"
+                          labelId="typeChatbot-selection-label"
+                          name="typeChatbot"
+                          margin="dense"
+                          className={classes.textField}
+                        >
+                          <MenuItem value="option">Opções</MenuItem>
+                          <MenuItem value="typebot">Typebot</MenuItem>
+                      </Field>
+                    </FormControl>
+                    <FormControlLabel
+                        control={
+                          <Field
+                            as={Switch}
+                            color="primary"
+                            name="resetChatbotMsg"
+                            checked={values.resetChatbotMsg}
+                          />
+                        }
+                        label={i18n.t("queueModal.form.resetChatbot")}
+                      />
+                    {(values.typeChatbot === ""||values.typeChatbot === "option") &&  
+                      <QueueOptions queueId={queueId} />
+                    }
+                    {values.typeChatbot === "typebot" && 
+                      <div>
+                          <FormControl  className={classes.selectField} margin="dense" variant="outlined" >
+                              <InputLabel htmlFor="workspaceTypebot-selection">Workspaces</InputLabel>
+                              <Field
+                                  as={Select}
+                                  id="workspaceTypebot-selection"
+                                  label="workSpaces"
+                                  labelId="workspaceTypebot-selection-label"
+                                  name="workspaceTypebot"
+                                  onChange={e => { 
+                                    setFieldValue('workspaceTypebot', e.target?.value)
+                                    handleChangeWorkspace(e.target?.value)
+                                  }}
+                                  margin="dense"
+                                  className={classes.textField}
+                                >
+                                  <MenuItem value={''}>&nbsp;</MenuItem>
+                                  {workspaceTypebots.map((workspace, key) => (
+                                    <MenuItem key={key} value={workspace.id}>{workspace.name}</MenuItem>
+                                  ))}
+                                  
+                          </Field>
+                          </FormControl>
+                          <FormControl  className={classes.selectField} margin="dense" variant="outlined">
+                            <InputLabel htmlFor="typebotId-selection">TypeBot</InputLabel>
+                            <Field
+                                as={Select}
+                                id="typebot-selection"
+                                label="Typebot"
+                                labelId="typebot-selection-label"
+                                name="typebotId"
+                                margin="dense"
+                                className={classes.textField}
+                              >
+                                <MenuItem value={''}>&nbsp;</MenuItem>
+                                {typeBots.map((typebot, key) => (
+                                    <MenuItem key={key} value={typebot.id}>{typebot.name}</MenuItem>
+                                  ))}
+                              </Field>
+                          </FormControl>
+                      </div> 
+                    }
+                     
                     {(queue.mediaPath || attachment) && (
                     <Grid xs={12} item>
                       <Button startIcon={<AttachFile />}>

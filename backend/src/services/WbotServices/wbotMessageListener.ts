@@ -49,6 +49,7 @@ import { cacheLayer } from "../../libs/cache";
 import { provider } from "./providers";
 import { debounce } from "../../helpers/Debounce";
 import { getMessageOptions } from "./SendWhatsAppMedia";
+import handleTypebot from "./wbotTypebot";
 
 const fs = require('fs')
 
@@ -545,7 +546,7 @@ const verifyQuotedMessage = async (
   return quotedMsg;
 };
 
-const verifyMediaMessage = async (
+export const verifyMediaMessage = async (
   msg: proto.IWebMessageInfo,
   ticket: Ticket,
   contact: Contact
@@ -751,6 +752,18 @@ const verifyQueue = async (
 
   if (queues.length === 1) {
     const firstQueue = head(queues);
+    // ====== Typebot ==========================
+    if (firstQueue.typeChatbot === 'typebot') {
+      if (!firstQueue.publicId) return;
+      await UpdateTicketService({
+        ticketData: { queueId: firstQueue?.id, chatbot: true },
+        ticketId: ticket.id,
+        companyId: ticket.companyId,
+      });
+      await handleTypebot(ticket, msg,firstQueue)
+      return;
+    }
+    // ============== end typebot ===============
     let chatbot = false;
     if (firstQueue?.options) {
       chatbot = firstQueue.options.length > 0;
@@ -761,7 +774,7 @@ const verifyQueue = async (
       const filePath = path.resolve("public", firstQueue.mediaPath);
 
 
-      const optionsMsg = await getMessageOptions(firstQueue.mediaName, filePath);
+      const optionsMsg = await getMessageOptions(firstQueue.mediaName, filePath, false);
 
       let sentMessage = await wbot.sendMessage(`${ticket.contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`, { ...optionsMsg });
 
@@ -866,6 +879,18 @@ const verifyQueue = async (
 
   if (choosenQueue) {
     let chatbot = false;
+    // ============ typebot ===================================
+    if (choosenQueue?.typeChatbot === 'typebot') {
+      if (!choosenQueue.publicId) return;
+      await UpdateTicketService({
+        ticketData: { queueId: choosenQueue.id, chatbot: true },
+        ticketId: ticket.id,
+        companyId: ticket.companyId,
+      });
+      await handleTypebot(ticket, msg,choosenQueue)
+      return;
+    }
+    // ============ typebot ===================================
     if (choosenQueue?.options) {
       chatbot = choosenQueue.options.length > 0;
     }
@@ -898,7 +923,11 @@ const verifyQueue = async (
         (!currentSchedule || currentSchedule.inActivity === false)
       ) {
 
-          const body = formatBody(`${queue.outOfHoursMessage}\n\n*[ 00 ]* - Voltar ao Menu Principal`, ticket.contact);
+          let msgoutOfHoursMessage = `${queue.outOfHoursMessage}\n`
+          if (queue.resetChatbotMsg) {
+            msgoutOfHoursMessage += "\n*[ 00 ]* - Voltar ao Menu Principal"
+          }
+          const body = formatBody(msgoutOfHoursMessage, ticket.contact);
           const sentMessage = await wbot.sendMessage(
             `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`, {
             text: body,
@@ -925,7 +954,7 @@ const verifyQueue = async (
       if (choosenQueue.mediaPath !== null && choosenQueue.mediaPath !== "") {
         const filePath = path.resolve("public", choosenQueue.mediaPath);
   
-        const optionsMsg = await getMessageOptions(choosenQueue.mediaName, filePath);
+        const optionsMsg = await getMessageOptions(choosenQueue.mediaName, filePath, false);
   
         let sentMessage = await wbot.sendMessage(`${ticket.contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`, { ...optionsMsg });
   
@@ -1052,17 +1081,23 @@ const handleChartbot = async (ticket: Ticket, msg: WAMessage, wbot: Session, don
     ],
   });
 
-
-
-
   const messageBody = getBodyMessage(msg);
 
   if (messageBody == "00") {
     // voltar para o menu inicial
-    await ticket.update({ queueOptionId: null, chatbot: false, queueId: null });
+    await ticket.update({ queueOptionId: null, chatbot: false, queueId: null, sessiontypebot: null, startChatTime: null });
     await verifyQueue(wbot, msg, ticket, ticket.contact);
     return;
   }
+   // ====== Typebot ==========================
+  if (queue.typeChatbot === 'typebot' ) {
+    if (!dontReadTheFirstQuestion) {
+      if (!queue.publicId) return;
+      await handleTypebot(ticket, msg,queue)
+    }
+    return;
+  }
+  // ============== end typebot ===============
 
   // voltar para o menu anterior
   if (!isNil(queue) && !isNil(ticket.queueOptionId) && messageBody == "0") {
@@ -1199,7 +1234,9 @@ const handleChartbot = async (ticket: Ticket, msg: WAMessage, wbot: Session, don
       queueOptions.forEach((option, i) => {
         options += `*[ ${option.option} ]* - ${option.title}\n`;
       });
-      options += `\n*[ 00 ]* - Menu inicial *[ 0 ]* Menu anterior`;
+      if (queue.resetChatbotMsg) {
+        options += `\n*[ 00 ]* - Menu inicial *[ 0 ]* Menu anterior`;
+      }
 
       const textMessage = {
         text: formatBody(`\u200e${queue.greetingMessage}\n\n${options}`, ticket.contact),
@@ -1317,7 +1354,9 @@ const handleChartbot = async (ticket: Ticket, msg: WAMessage, wbot: Session, don
         queueOptions.forEach((option, i) => {
           options += `*[ ${option.option} ]* - ${option.title}\n`;
         });
-        options += `\n*[ 00 ]* - Voltar Menu Inicial`;
+        if (queue.resetChatbotMsg) {
+          options += `\n*[ 00 ]* - Voltar Menu Inicial`;
+        }
 
         const textMessage = {
           text: formatBody(`\u200e${currentOption.message}\n\n${options}`, ticket.contact),
@@ -1335,7 +1374,7 @@ const handleChartbot = async (ticket: Ticket, msg: WAMessage, wbot: Session, don
           const filePath = path.resolve("public", currentOption.mediaPath);
     
     
-          const optionsMsg = await getMessageOptions(currentOption.mediaName, filePath);
+          const optionsMsg = await getMessageOptions(currentOption.mediaName, filePath, false);
     
           let sentMessage = await wbot.sendMessage(`${ticket.contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`, { ...optionsMsg });
     
@@ -1459,6 +1498,8 @@ const handleMessage = async (
         queueOptionId: null,
         chatbot: false,
         queueId: null,
+        sessiontypebot: null,
+        startChatTime: null
       });
       await verifyQueue(wbot, msg, ticket, ticket.contact);
       return;
