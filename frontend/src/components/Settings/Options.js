@@ -107,9 +107,16 @@ export default function Options(props) {
   const [asaasType, setAsaasType] = useState("");
   const [loadingAsaasType, setLoadingAsaasType] = useState(false);
 
+  // =========== TypeBOt =================================
   const [tokenTypebot, setTokenTypebot] = useState("");
   const [loadingtokenTypebot, setLoadingTokenTypebot] = useState(false);
 
+  const [urlTypebotBuilder, setUrlTypebotBuilder] = useState("");
+  const [loadingUrlTypebotBuilder, setLoadingUrlTypebotBuilder] = useState(false);
+
+  const [urlTypebotViewer, setUrlTypebotViewer] = useState("");
+  const [loadingUrlTypebotViewer, setLoadingUrlypebotViewer] = useState(false);
+  // =================================================================
   const { update } = useSettings();
 
   useEffect(() => {
@@ -164,11 +171,20 @@ export default function Options(props) {
       if (asaasType) {
         setAsaasType(asaasType.value);
       }
-
+      // =================== TypeBot ================================
       const tokenTypebot = settings.find((s) => s.key === "tokenTypebot");
       if (tokenTypebot) {
         setTokenTypebot(tokenTypebot.value);
       }
+      const urlTypebotBuilder = settings.find((s) => s.key === "urlTypebotBuilder");
+      if (urlTypebotBuilder) {
+        setUrlTypebotBuilder(urlTypebotBuilder.value);
+      }
+      const urlTypebotViewer = settings.find((s) => s.key === "urlTypebotViewer");
+      if (urlTypebotViewer) {
+        setUrlTypebotViewer(urlTypebotViewer.value);
+      }
+      // =================================================================
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings]);
@@ -308,17 +324,31 @@ export default function Options(props) {
     toast.success("Operação atualizada com sucesso.");
     setLoadingAsaasType(false);
   }
+  // ====================== Typebot =============================
+  async function UpdateFiledValue(field, value, setStateValue, setStateLoading) {
+    try {
+      setStateValue(value)
+      setStateLoading(true) 
+      await update({ key: field, value }); 
+      toast.success("Operação atualizada com sucesso.");
+      } catch (erro) { 
+        toast.error(erro);
+      }
+      setStateLoading(false) 
+  }
 
   async function handleChangeTokenTypebot(value) {
-    setTokenTypebot(value);
-    setLoadingTokenTypebot(true);
-    await update({
-      key: "tokenTypebot",
-      value,
-    });
-    toast.success("Operação atualizada com sucesso.");
-    setLoadingTokenTypebot(false);
+    await UpdateFiledValue("tokenTypebot", value, setTokenTypebot, setLoadingTokenTypebot)
   }
+  
+  async function handleChangeUrlTypebotBuilder(value) {
+    await UpdateFiledValue("urlTypebotBuilder", value, setUrlTypebotBuilder, setLoadingUrlTypebotBuilder)
+  }
+  
+  async function handleChangeUrlTypebotViewer(value) {
+    await UpdateFiledValue("urlTypebotViewer", value, setUrlTypebotViewer, setLoadingUrlypebotViewer)
+  }
+  // ====================================================
   return (
     <>
       <Grid spacing={3} container>
@@ -614,7 +644,45 @@ export default function Options(props) {
           <Tab label="TYPEBOT" />
 
         </Tabs>
-        <Grid xs={12} sm={12} md={12} item>
+        <Grid xs={12} sm={12} md={4} item>
+          <FormControl className={classes.selectContainer}>
+            <TextField
+              id="urlTypebotBuilder"
+              name="urlTypebotBuilder"
+              margin="dense"
+              label="Url Typebot BUilder"
+              variant="outlined"
+              value={urlTypebotBuilder}
+              onChange={async (e) => {
+                handleChangeUrlTypebotBuilder(e.target.value);
+              }}
+            >
+            </TextField>
+            <FormHelperText>
+              {loadingUrlTypebotBuilder && "Atualizando..."}
+            </FormHelperText>
+          </FormControl>
+        </Grid>
+        <Grid xs={12} sm={12} md={4} item>
+          <FormControl className={classes.selectContainer}>
+            <TextField
+              id="urlTypebotViewer"
+              name="urlTypebotViewer"
+              margin="dense"
+              label="Url Typebot Viewer"
+              variant="outlined"
+              value={urlTypebotViewer}
+              onChange={async (e) => {
+                handleChangeUrlTypebotViewer(e.target.value);
+              }}
+            >
+            </TextField>
+            <FormHelperText>
+              {loadingUrlTypebotViewer && "Atualizando..."}
+            </FormHelperText>
+          </FormControl>
+        </Grid>
+        <Grid xs={12} sm={12} md={4} item>
           <FormControl className={classes.selectContainer}>
             <TextField
               id="tokentypebot"

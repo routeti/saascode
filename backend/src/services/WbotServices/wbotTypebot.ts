@@ -70,7 +70,7 @@ async function baixarESalvarArquivo(url) {
   }
 }
 const startChat = async (msgBody, ticket, typebot) => {
-  const requestData = await TypebotService.startChat(msgBody,typebot)
+  const requestData = await TypebotService.startChat(msgBody,typebot, ticket.companyId)
   const { sessionId } = requestData
   if (sessionId) {
     await ticket.update({ 
@@ -83,7 +83,7 @@ const startChat = async (msgBody, ticket, typebot) => {
 }
 
 const continueChat = async (msgBody, ticket) => {
-  return TypebotService.continueChat(msgBody, ticket.sessiontypebot)
+  return TypebotService.continueChat(msgBody, ticket.sessiontypebot, ticket.companyId)
 }
   
 const SendMessageReturnTypebot = async (requestData, ticket,resetChatbotMsg) => {

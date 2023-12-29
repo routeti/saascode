@@ -32,12 +32,16 @@ import {
   Select,
   Tab,
   Tabs,
-  Switch
+  Switch,
+  Typography
 } from "@material-ui/core";
 import { AttachFile, Colorize, DeleteOutline } from "@material-ui/icons";
 import { QueueOptions } from "../QueueOptions";
 import SchedulesForm from "../SchedulesForm";
 import ConfirmationModal from "../ConfirmationModal";
+import useSettings from "../../hooks/useSettings";
+
+import DialoMessage from "../Dialog"
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -111,7 +115,10 @@ const QueueModal = ({ open, onClose, queueId }) => {
   const [workspaceTypebots, setWorkspaceTypebots] = useState([]);
   const [typeBots, setTypebots] = useState([]);
   
+  const [isConfigTypebot, setIsConfigTypebot] = useState(false);
+  const [openModalTypebot, setOpenModalTypebot] = useState(false);
   
+  const { getAll: getAllSettings } = useSettings();
 
   const [schedules, setSchedules] = useState([
     { weekday: "Segunda-feira",weekdayEn: "monday",startTime: "08:00",endTime: "18:00",},
@@ -133,6 +140,39 @@ const QueueModal = ({ open, onClose, queueId }) => {
       }
     });
   }, []);
+
+  useEffect(() => {
+    async function findData() {
+      try {
+        const settingList = await getAllSettings();
+        
+        if (Array.isArray(settingList)) {
+          const urlTypebotBuilder = settingList.find(
+            (d) => d.key === "urlTypebotBuilder"
+          );
+          const urlTypebotViewer = settingList.find(
+            (d) => d.key === "urlTypebotViewer"
+          );
+          const tokenTypebot = settingList.find(
+            (d) => d.key === "tokenTypebot"
+          );
+          console.log("pAssou ",urlTypebotBuilder, urlTypebotBuilder.value, urlTypebotViewer, urlTypebotViewer.value, tokenTypebot, tokenTypebot.value )
+          if ((urlTypebotBuilder && urlTypebotBuilder.value )
+              && (urlTypebotViewer  && urlTypebotViewer.value) 
+              && (tokenTypebot && tokenTypebot.value) ) {
+                console.log("Entrou config")
+            setIsConfigTypebot(true);
+          }
+        }
+      } catch (e) {
+        toast.error(e);
+        setIsConfigTypebot(false);
+      }
+    }
+    findData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queueId]);
+
 
   useEffect(() => {
     (async () => {
@@ -283,6 +323,27 @@ const QueueModal = ({ open, onClose, queueId }) => {
       >
         {i18n.t("queueModal.confirmationModal.deleteMessage")}
       </ConfirmationModal>
+      <DialoMessage
+        title={"Configuração necessária"} 
+        modalOpen={openModalTypebot}
+        onClose={() => setOpenModalTypebot(false)}
+        //children={"Necessário efetuar configuração do typebot no painel de configuração da empresa"}
+      >
+        <>
+        <DialogContent dividers>
+				  <Typography>{"Necessário efetuar configuração do typebot no painel de configuração da empresa"}</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            variant="contained"
+            onClick={() => setOpenModalTypebot(false)}
+            color="primary"
+          >
+            {"Ok"}
+          </Button>
+          </DialogActions>
+        </>
+      </DialoMessage>
       <Dialog
         maxWidth="md"
         fullWidth={true}
@@ -434,6 +495,12 @@ const QueueModal = ({ open, onClose, queueId }) => {
                           name="typeChatbot"
                           margin="dense"
                           className={classes.textField}
+                          onChange={e => {
+                            setFieldValue('typeChatbot', e.target?.value)
+                            if (e.target.value ==="typebot" && !isConfigTypebot )  {
+                              setOpenModalTypebot(true)
+                            }
+                          }}
                         >
                           <MenuItem value="option">Opções</MenuItem>
                           <MenuItem value="typebot">Typebot</MenuItem>
