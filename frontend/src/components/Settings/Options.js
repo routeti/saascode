@@ -650,7 +650,7 @@ export default function Options(props) {
               id="urlTypebotBuilder"
               name="urlTypebotBuilder"
               margin="dense"
-              label="Url Typebot BUilder"
+              label="Url Typebot Builder"
               variant="outlined"
               value={urlTypebotBuilder}
               onChange={async (e) => {
